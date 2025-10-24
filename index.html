@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>텍스트 파일 분할기 - 대용량 텍스트 파일을 쉽게 나누기</title>
+    <meta name="description" content="대용량 텍스트 파일을 Claude AI가 읽을 수 있는 크기로 쉽게 분할하세요. 무료 온라인 도구로 파일을 원하는 크기로 나누고 ZIP으로 다운로드할 수 있습니다.">
+    <meta name="keywords" content="텍스트 파일 분할, 파일 나누기, 대용량 파일 분할, Claude AI, 텍스트 분할기, 파일 스플리터">
+    <meta name="author" content="baal.co.kr">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://split.baal.co.kr">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://split.baal.co.kr">
+    <meta property="og:title" content="텍스트 파일 분할기 - 대용량 텍스트 파일을 쉽게 나누기">
+    <meta property="og:description" content="대용량 텍스트 파일을 Claude AI가 읽을 수 있는 크기로 쉽게 분할하세요. 무료 온라인 도구.">
+    <meta property="og:site_name" content="텍스트 파일 분할기">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://split.baal.co.kr">
+    <meta name="twitter:title" content="텍스트 파일 분할기 - 대용량 텍스트 파일을 쉽게 나누기">
+    <meta name="twitter:description" content="대용량 텍스트 파일을 Claude AI가 읽을 수 있는 크기로 쉽게 분할하세요.">
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✂️</text></svg>">
+
+    <!-- JSZip Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .header .icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f8f9ff;
+        }
+
+        .upload-area.has-file {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            background: #f5f5f5;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .size-display {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #667eea;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-header h2 {
+            font-size: 1.5em;
+            color: #333;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            color: #1976d2;
+            font-size: 0.95em;
+        }
+
+        .parts-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .part-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .part-item:hover {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .part-info h3 {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .part-info p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .btn-download {
+            background: #2196f3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-download:hover {
+            background: #1976d2;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">✂️</div>
+            <h1>텍스트 파일 분할기</h1>
+            <p>대용량 텍스트 파일을 Claude AI가 읽을 수 있는 크기로 쉽게 나누세요</p>
+        </div>
+
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept=".txt">
+            <div class="upload-icon">📁</div>
+            <div id="uploadText">
+                <h3>텍스트 파일 선택</h3>
+                <p>클릭하여 .txt 파일 업로드</p>
+            </div>
+        </div>
+
+        <div id="controls" class="controls hidden">
+            <div class="control-group">
+                <label>분할 크기 (MB 단위)</label>
+                <div class="slider-container">
+                    <input type="range" id="sizeSlider" min="0.5" max="5" step="0.5" value="1">
+                    <span class="size-display" id="sizeDisplay">1 MB</span>
+                </div>
+                <p style="color: #666; font-size: 0.9em; margin-top: 10px;">각 파일이 약 이 크기씩 분할됩니다</p>
+            </div>
+
+            <button class="btn btn-primary" id="splitBtn" onclick="splitFile()">
+                ✂️ 파일 분할하기
+            </button>
+        </div>
+
+        <div id="results" class="results hidden">
+            <div class="results-header">
+                <h2>✅ 분할 완료: <span id="partCount">0</span>개 파일</h2>
+            </div>
+
+            <button class="btn btn-success" onclick="downloadAllAsZip()">
+                📦 ZIP으로 다운로드
+            </button>
+
+            <div class="info-box">
+                <p>📁 ZIP 파일을 압축 해제하면 <strong id="folderName"></strong> 폴더가 생성됩니다</p>
+            </div>
+
+            <div class="parts-list" id="partsList"></div>
+        </div>
+
+        <div class="footer">
+            <p>💡 원본 파일은 그대로 유지되며, 줄 단위로 분할되어 내용이 잘리지 않습니다</p>
+            <p style="margin-top: 10px;">Made with ❤️ by <a href="https://baal.co.kr" style="color: #667eea; text-decoration: none;">baal.co.kr</a></p>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let splitParts = [];
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const uploadText = document.getElementById('uploadText');
+        const controls = document.getElementById('controls');
+        const results = document.getElementById('results');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const sizeDisplay = document.getElementById('sizeDisplay');
+        const splitBtn = document.getElementById('splitBtn');
+
+        // File upload handler
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type === 'text/plain') {
+                currentFile = file;
+                uploadArea.classList.add('has-file');
+                uploadText.innerHTML = `
+                    <h3>${file.name}</h3>
+                    <p>${formatBytes(file.size)}</p>
+                `;
+                controls.classList.remove('hidden');
+                results.classList.add('hidden');
+            } else {
+                alert('텍스트 파일(.txt)만 업로드 가능합니다.');
+            }
+        });
+
+        // Slider handler
+        sizeSlider.addEventListener('input', function() {
+            sizeDisplay.textContent = this.value + ' MB';
+        });
+
+        // Split file function
+        async function splitFile() {
+            if (!currentFile) return;
+
+            splitBtn.disabled = true;
+            splitBtn.textContent = '⏳ 처리 중...';
+
+            try {
+                const text = await currentFile.text();
+                const maxBytes = parseFloat(sizeSlider.value) * 1024 * 1024;
+                const parts = [];
+
+                let currentPart = '';
+                let currentBytes = 0;
+                const lines = text.split('\n');
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i] + '\n';
+                    const lineBytes = new Blob([line]).size;
+
+                    if (currentBytes + lineBytes > maxBytes && currentPart.length > 0) {
+                        parts.push(currentPart);
+                        currentPart = line;
+                        currentBytes = lineBytes;
+                    } else {
+                        currentPart += line;
+                        currentBytes += lineBytes;
+                    }
+                }
+
+                if (currentPart.length > 0) {
+                    parts.push(currentPart);
+                }
+
+                splitParts = parts;
+                displayResults();
+            } catch (error) {
+                alert('파일 처리 중 오류가 발생했습니다: ' + error.message);
+            }
+
+            splitBtn.disabled = false;
+            splitBtn.textContent = '✂️ 파일 분할하기';
+        }
+
+        // Display results
+        function displayResults() {
+            const folderName = currentFile.name.replace('.txt', '');
+            document.getElementById('partCount').textContent = splitParts.length;
+            document.getElementById('folderName').textContent = folderName;
+
+            const partsList = document.getElementById('partsList');
+            partsList.innerHTML = '';
+
+            splitParts.forEach((part, index) => {
+                const partItem = document.createElement('div');
+                partItem.className = 'part-item';
+                partItem.innerHTML = `
+                    <div class="part-info">
+                        <h3>Part ${index + 1}</h3>
+                        <p>${formatBytes(new Blob([part]).size)}</p>
+                    </div>
+                    <button class="btn-download" onclick="downloadPart(${index})">
+                        💾 개별 다운로드
+                    </button>
+                `;
+                partsList.appendChild(partItem);
+            });
+
+            results.classList.remove('hidden');
+        }
+
+        // Download single part
+        function downloadPart(index) {
+            const folderName = currentFile.name.replace('.txt', '');
+            const blob = new Blob([splitParts[index]], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${folderName}_part${index + 1}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Download all as ZIP
+        async function downloadAllAsZip() {
+            if (typeof JSZip === 'undefined') {
+                alert('ZIP 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+
+            try {
+                const zip = new JSZip();
+                const folderName = currentFile.name.replace('.txt', '');
+                const folder = zip.folder(folderName);
+
+                splitParts.forEach((part, index) => {
+                    folder.file(`${folderName}_part${index + 1}.txt`, part);
+                });
+
+                const blob = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${folderName}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('ZIP 파일 생성 중 오류가 발생했습니다: ' + error.message);
+            }
+        }
+
+        // Format bytes
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+    </script>
+</body>
+</html>
